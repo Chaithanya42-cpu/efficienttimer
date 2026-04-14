@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lightspeed.ai | 20m Sprints</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --card: #111111;
+            --accent: #00f2ff;
+            --warning: #ff3e3e;
+            --success: #00ff88;
+            --text: #ffffff;
+            --dim: #666666;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .workspace {
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            letter-spacing: 5px;
+            color: var(--dim);
+            margin-bottom: 2rem;
+        }
+
+        /* Task Input */
+        .input-box {
+            margin-bottom: 2rem;
+        }
+
+        input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #222;
+            color: var(--accent);
+            font-size: 1.5rem;
+            padding: 10px 0;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        /* Timer Display */
+        .timer-container {
+            position: relative;
+            margin: 3rem 0;
+        }
+
+        #timer {
+            font-size: 6rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            margin: 0;
+            line-height: 1;
+        }
+
+        /* Progress Bar */
+        .progress-track {
+            width: 100%;
+            height: 4px;
+            background: #222;
+            margin-top: 1rem;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 100%;
+            height: 100%;
+            background: var(--accent);
+            transition: width 1s linear, background-color 0.5s;
+        }
+
+        /* Controls */
+        .controls button {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 1rem 3rem;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .controls button:hover {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .controls button:disabled {
+            border-color: #333;
+            color: #333;
+            cursor: not-allowed;
+        }
+
+        /* Logs */
+        .logs {
+            margin-top: 3rem;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            color: var(--dim);
+        }
+
+        .log-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .win { color: var(--success); }
+        .fail { color: var(--warning); }
+
+    </style>
+</head>
+<body>
+
+    <div class="workspace">
+        <div class="header">
+            <h1>LIGHTSPEED.AI // 20M</h1>
+        </div>
+
+        <div class="input-box">
+            <input type="text" id="taskName" placeholder="ENTER TASK (E.G. CRM AUDIT)" autocomplete="off">
+        </div>
+
+        <div class="timer-container">
+            <p id="timer">20:00</p>
+            <div class="progress-track">
+                <div id="progress-bar"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="actionBtn" onclick="toggleState()">INITIATE SPRINT</button>
+        </div>
+
+        <div class="logs" id="logList">
+            </div>
+    </div>
+
+    <script>
+        let timeLeft = 1200; // 20 minutes in seconds
+        let timerId = null;
+        let isRunning = false;
+
+        const timerDisplay = document.getElementById('timer');
+        const progressBar = document.getElementById('progress-bar');
+        const actionBtn = document.getElementById('actionBtn');
+        const taskInput = document.getElementById('taskName');
+        const logList = document.getElementById('logList');
+
+        function updateDisplay() {
+            const mins = Math.floor(timeLeft / 60);
+            const secs = timeLeft % 60;
+            timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            
+            // Update Progress Bar
+            const percent = (timeLeft / 1200) * 100;
+            progressBar.style.width = percent + '%';
+
+            // Change color if under 5 minutes
+            if (timeLeft < 300) {
+                progressBar.style.backgroundColor = 'var(--warning)';
+                timerDisplay.style.color = 'var(--warning)';
+            } else {
+                progressBar.style.backgroundColor = 'var(--accent)';
+                timerDisplay.style.color = 'var(--text)';
+            }
+        }
+
+        function toggleState() {
+            if (!isRunning) {
+                if (taskInput.value.trim() === "") {
+                    alert("Define the mission first.");
+                    return;
+                }
+                startSprint();
+            } else {
+                completeSprint(true);
+            }
+        }
+
+        function startSprint() {
+            isRunning = true;
+            actionBtn.innerText = "MISSION COMPLETE";
+            taskInput.disabled = true;
+            
+            timerId = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
+                    completeSprint(false);
+                }
+            }, 1000);
+        }
+
+        function completeSprint(wasSuccessful) {
+            clearInterval(timerId);
+            const task = taskInput.value;
+            const timeSpent = 1200 - timeLeft;
+            const minsSpent = Math.floor(timeSpent / 60);
+            const secsSpent = timeSpent % 60;
+
+            // Log entry
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const statusClass = wasSuccessful ? 'win' : 'fail';
+            const statusText = wasSuccessful ? 'SUCCESS' : 'TIMEOUT';
+            
+            entry.innerHTML = `
+                <span>${task}</span>
+                <span class="${statusClass}">${statusText} (${minsSpent}:${secsSpent.toString().padStart(2, '0')})</span>
+            `;
+            logList.prepend(entry);
+
+            // Reset UI
+            isRunning = false;
+            timeLeft = 1200;
+            actionBtn.innerText = "INITIATE SPRINT";
+            taskInput.disabled = false;
+            taskInput.value = "";
+            updateDisplay();
+        }
+    </script>
+</body>
+</html>
