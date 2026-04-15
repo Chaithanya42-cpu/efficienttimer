@@ -169,12 +169,39 @@
         let timeLeft = 1200; // 20 minutes in seconds
         let timerId = null;
         let isRunning = false;
+        
+        // Audio Setup
+        let audioCtx = null;
 
         const timerDisplay = document.getElementById('timer');
         const progressBar = document.getElementById('progress-bar');
         const actionBtn = document.getElementById('actionBtn');
         const taskInput = document.getElementById('taskName');
         const logList = document.getElementById('logList');
+
+        function playTick() {
+            // Initialize AudioContext on first user interaction
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // Create a short "click" sound
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime); // High pitch click
+            
+            // Envelope: starts at 0.1 volume and drops to 0 very fast (40ms)
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.04);
+        }
 
         function updateDisplay() {
             const mins = Math.floor(timeLeft / 60);
@@ -215,6 +242,8 @@
             timerId = setInterval(() => {
                 timeLeft--;
                 updateDisplay();
+                playTick(); // Play sound every second
+                
                 if (timeLeft <= 0) {
                     clearInterval(timerId);
                     completeSprint(false);
